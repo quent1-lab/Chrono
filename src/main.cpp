@@ -13,7 +13,7 @@ const int A_3 = 19;
 const int B3 = 18;
 const int C3 = 5;
 const int D3 = 17;
-const int dp4 = 16;
+//const int dp4 = 16;
 const int A_4 = 15;
 const int B4 = 2;
 const int C4 = 0;
@@ -23,7 +23,7 @@ const int pin_segment[4][5] = {
     {A1, B_1, C1, D1, dp1},
     {A2, B2, C2, D2, 0},
     {D3, C3, B3, A_3, 0},
-    {A_4, B4, C4, D4, dp4}};
+    {A_4, B4, C4, D4, 0}};
 
 void number_digit(int num_segment, int numeral);
 void timer(int timer_value);
@@ -62,7 +62,7 @@ for (int i = 0; i < 10; i++)
   number_digit(1, i);
   number_digit(2, i);
   number_digit(3, i);
-  delay(1000);
+  delay(400);
 }
 
   previousMillis = millis();
@@ -71,16 +71,15 @@ for (int i = 0; i < 10; i++)
 void loop()
 {
   digitalWrite(dp1, HIGH);
-  digitalWrite(dp4, HIGH);
 
   timer(12);
 
-  number_digit(3, minute);
-  number_digit(0, sec_dizaine);
+  number_digit(0, minute);
+  number_digit(3, sec_dizaine);
   number_digit(1, sec_unite);
   number_digit(2, minute_dizaine);
 
-  delay(2000);//Ajouté pour test
+  //delay(500);//Ajouté pour test
 }
 
 void number_digit(int num_segment, int numeral)
@@ -147,7 +146,7 @@ void timer(int timer_value)
           }
           else{
             minute_dizaine--;
-            minute--;
+            minute = 9;
             sec_dizaine = 5;
             sec_unite = 9;
           }

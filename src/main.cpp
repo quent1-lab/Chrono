@@ -64,7 +64,11 @@ for (int i = 0; i < 10; i++)
   number_digit(3, i);
   delay(400);
 }
-
+number_digit(0, 0);
+number_digit(1, 1);
+number_digit(2, 2);
+number_digit(3, 3);
+delay(5000);
   previousMillis = millis();
 }
 
@@ -75,8 +79,8 @@ void loop()
   timer(12);
 
   number_digit(0, minute);
-  number_digit(3, sec_dizaine);
-  number_digit(1, sec_unite);
+  number_digit(1, sec_dizaine);
+  number_digit(3, sec_unite);
   number_digit(2, minute_dizaine);
 
   //delay(500);//Ajouté pour test

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+//Variables of the pins
 const int A1 = 16;
 const int B_1 = 13;
 const int C1 = 32;
@@ -13,23 +14,26 @@ const int A_3 = 19;
 const int B3 = 18;
 const int C3 = 5;
 const int D3 = 17;
-//const int dp4 = 16;
 const int A_4 = 15;
 const int B4 = 2;
 const int C4 = 0;
 const int D4 = 4;
 
+//Array of the pins
 const int pin_segment[4][5] = {
     {A1, B_1, C1, D1, dp1},
     {A2, B2, C2, D2, 0},
     {D3, C3, B3, A_3, 0},
     {A_4, B4, C4, D4, 0}};
 
+//Prototypes of the functions
 void number_digit(int num_segment, int numeral);
 void timer(int timer_value);
+void test_number(bool activate);
+void test_place(bool activate);
 
+//Variables of the timer
 unsigned long previousMillis = 0;
-
 int sec_unite = 0;
 int sec_dizaine = 0;
 int minute = 0;
@@ -55,20 +59,10 @@ void setup()
   pinMode(5, OUTPUT);
   pinMode(18, OUTPUT);
   pinMode(19, OUTPUT);
-for (int i = 0; i < 10; i++)
-{
-  /* code */
-  number_digit(0, i);
-  number_digit(1, i);
-  number_digit(2, i);
-  number_digit(3, i);
-  delay(400);
-}
-number_digit(0, 0);
-number_digit(1, 1);
-number_digit(2, 2);
-number_digit(3, 3);
-delay(5000);
+
+  test_number(true);
+  test_place(true);
+
   previousMillis = millis();
 }
 
@@ -82,8 +76,6 @@ void loop()
   number_digit(1, sec_dizaine);
   number_digit(3, sec_unite);
   number_digit(2, minute_dizaine);
-
-  //delay(500);//Ajouté pour test
 }
 
 void number_digit(int num_segment, int numeral)
@@ -127,6 +119,22 @@ void number_digit(int num_segment, int numeral)
   }
 }
 
+/*
+void number_digit(int num_segment, int numeral)
+{
+  byte num = byte(numeral);
+
+  digitalWrite(pin_segment[num_segment][0], (num & 0b0001));
+
+  digitalWrite(pin_segment[num_segment][1], (num & 0b0010));
+
+  digitalWrite(pin_segment[num_segment][2], (num & 0b0100));
+
+  digitalWrite(pin_segment[num_segment][3], (num & 0b1000));
+
+}
+*/
+
 void timer(int timer_value)
 {
   /*
@@ -136,39 +144,76 @@ void timer(int timer_value)
   Et décompte le temps jusqu'à 0
   */
 
-  if(millis() > previousMillis + 1000){
+  if (millis() > previousMillis + 1000)
+  {
     previousMillis = millis();
-    if(sec_unite == 0){
-      if(sec_dizaine == 0){
-        if(minute == 0){
-          if(minute_dizaine == 0){
-            minute = timer_value-10;
-            minute_dizaine = (timer_value-minute)/10;
-            
+    if (sec_unite == 0)
+    {
+      if (sec_dizaine == 0)
+      {
+        if (minute == 0)
+        {
+          if (minute_dizaine == 0)
+          {
+            minute = timer_value - 10;
+            minute_dizaine = (timer_value - minute) / 10;
+
             sec_dizaine = 0;
             sec_unite = 0;
           }
-          else{
+          else
+          {
             minute_dizaine--;
             minute = 9;
             sec_dizaine = 5;
             sec_unite = 9;
           }
         }
-        else{
+        else
+        {
           minute--;
           sec_dizaine = 5;
           sec_unite = 9;
         }
       }
-      else{
+      else
+      {
         sec_dizaine--;
         sec_unite = 9;
       }
     }
-    else{
+    else
+    {
       sec_unite--;
     }
     previousMillis = millis();
+  }
+}
+
+void test_number(bool activate)
+{
+  if (activate)
+  {
+    for (int i = 0; i < 10; i++)
+    {
+      /* code */
+      number_digit(0, i);
+      number_digit(1, i);
+      number_digit(2, i);
+      number_digit(3, i);
+      delay(400);
+    }
+  }
+}
+
+void test_place(bool activate)
+{
+  if (activate)
+  {
+    number_digit(0, 0);
+    number_digit(1, 1);
+    number_digit(2, 2);
+    number_digit(3, 3);
+    delay(5000);
   }
 }

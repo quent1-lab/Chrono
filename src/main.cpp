@@ -135,13 +135,11 @@ void number_digit(int num_segment, int numeral)
 }
 */
 
-void timer(int timer_value)
-{
+void timer(int timer_value){
   /*
-  Cette fonction permet de modifier la valeur des variables: minutes, sec_dizaine et sec_unite
-  Afin de faire fonctionner le timer
-  Elle prend en paramètre la valeur du timer en minutes
-  Et décompte le temps jusqu'à 0
+  This function allows you to change the value of the variables:
+  minutes, sec_ten and sec_unit in order to make the timer work
+  It takes as parameter the value of the timer in minutes and counts down the time to 0
   */
 
   if (millis() > previousMillis + 1000)

@@ -2,9 +2,11 @@
 
 #include <esp_now.h>
 #include <WiFi.h>
+#include "rgb_lcd.h"
 
 // REPLACE WITH YOUR RECEIVER MAC Address
-uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t simonAddress[] = {0x10, 0x97, 0xBD, 0xD2, 0x9B, 0x54};
+uint8_t labyrintheAddress[] = {0xC8, 0xF0, 0x9E, 0x2C, 0x12, 0xC8};
 
 // Structure example to send data
 // Must match the receiver structure
@@ -19,12 +21,13 @@ typedef struct struct_message
   int level[2];
   int condo;
   char num_serie[6];
+  bool start;
 } struct_message;
 
 // Create a struct_message called myData
 struct_message myData;
-
 esp_now_peer_info_t peerInfo;
+rgb_lcd lcd;
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
@@ -33,7 +36,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
+{
   memcpy(&myData, incomingData, sizeof(myData));
 }
 
@@ -68,13 +72,17 @@ void number_digit(int num_segment, int numeral);
 void timer(int timer_value);
 void test_number(bool activate);
 void test_place(bool activate);
+void printLCD(int ligne, int colonne, String message, bool effacer);
+void random_numero_serie();
 
 // Variables of the timer
 unsigned long previousMillis = 0;
+unsigned long timeLCD = 0;
 int sec_unite = 0;
 int sec_dizaine = 0;
 int minute = 0;
 int minute_dizaine = 0;
+int erreur_avant = 0;
 
 void setup()
 {
@@ -100,6 +108,9 @@ void setup()
   // Init Serial Monitor
   Serial.begin(115200);
 
+  lcd.begin(16, 2);
+  lcd.setRGB(0, 255, 0);
+
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
 
@@ -117,7 +128,7 @@ void setup()
   esp_now_register_send_cb(OnDataSent);
 
   // Register peer
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  memcpy(peerInfo.peer_addr, simonAddress, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
 
@@ -131,19 +142,64 @@ void setup()
   test_number(true);
   test_place(true);
 
+  digitalWrite(dp1, HIGH);
+  random_numero_serie();
+  printLCD(0, 3, "ErtinaKaze", true);
+  printLCD(1, 6, "BOMB", false);
+  delay(1500);
+  myData.erreur = 0;
+  myData.timer = 0;
+  myData.timer_value = 0;
+  myData.module = 0;
+  myData.difficulty = 0;
+  myData.level[0] = 0;
+  myData.level[1] = 0;
+  myData.condo = 0;
+  myData.start = 0;
+  sec_unite = 0;
+  sec_dizaine = 0;
+  minute = 0;
+  minute_dizaine = 0;
   previousMillis = millis();
 }
 
 void loop()
 {
-  digitalWrite(dp1, HIGH);
+  OnDataRecv(simonAddress, (uint8_t *)&myData, sizeof(myData));
+  OnDataRecv(labyrintheAddress, (uint8_t *)&myData, sizeof(myData));
 
-  timer(12);
+  if (myData.start)
+  {
+    timer(myData.timer);
+  }
+
+  if (millis() - timeLCD > 400)
+  {
+    if (myData.start)
+    {
+      printLCD(0, 0, "Erreur : ", true);
+      printLCD(0, 9, String(myData.erreur), false);
+
+      printLCD(1, 0, "Serie :", false);
+      printLCD(1, 8, String(myData.num_serie), false);
+    }else{
+      printLCD(0,1,"Attente depart",true);
+    }
+    timeLCD = millis();
+  }
 
   number_digit(0, minute);
   number_digit(1, sec_dizaine);
   number_digit(3, sec_unite);
   number_digit(2, minute_dizaine);
+
+  if (myData.erreur != erreur_avant)
+  {
+    erreur_avant = myData.erreur;
+    lcd.setRGB(255, 0, 0);
+    delay(500);
+    lcd.setRGB(0, 255, 0);
+  }
 }
 
 void number_digit(int num_segment, int numeral)
@@ -282,5 +338,41 @@ void test_place(bool activate)
     number_digit(2, 2);
     number_digit(3, 3);
     delay(5000);
+  }
+}
+
+void printLCD(int ligne, int colonne, String message, bool effacer)
+{
+  if (effacer)
+  {
+    lcd.clear();
+  }
+  lcd.setCursor(colonne, ligne);
+  lcd.print(message);
+}
+
+void random_numero_serie()
+{
+  // Un numéro de série est généré aléatoirement avec des lettres et des chiffres
+  // Il est ensuite envoyé à l'arduino de Simon
+  // Il est aussi affiché sur l'écran LCD
+
+  // Génération du numéro de série
+  for (int i = 0; i < 4; i++)
+  {
+    // Génération d'un chiffre aléatoire
+    int chiffre = random(0, 10);
+    // conversion du chiffre en ASCII
+    chiffre = chiffre + 48;
+    // Ajout du chiffre à la fin du numéro de série
+    myData.num_serie[i] = chiffre;
+  }
+
+  for (int i = 4; i < 6; i++)
+  {
+    // Génération d'une lettre aléatoire
+    int lettre = random(65, 91);
+    // Ajout de la lettre à la fin du numéro de série
+    myData.num_serie[i] = lettre;
   }
 }

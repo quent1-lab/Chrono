@@ -22,6 +22,8 @@ typedef struct struct_message
   int condo;
   char num_serie[6];
   bool start;
+  bool game_over;
+  bool victory;
 } struct_message;
 
 // Create a struct_message called myData
@@ -156,6 +158,7 @@ void setup()
   myData.level[1] = 0;
   myData.condo = 0;
   myData.start = 0;
+  myData.game_over = 0;
   sec_unite = 0;
   sec_dizaine = 0;
   minute = 0;
@@ -170,7 +173,7 @@ void loop()
 
   if (myData.start)
   {
-    timer(myData.timer);
+    timer(myData.timer_value);
   }
 
   if (millis() - timeLCD > 400)
@@ -182,8 +185,24 @@ void loop()
 
       printLCD(1, 0, "Serie :", false);
       printLCD(1, 8, String(myData.num_serie), false);
-    }else{
-      printLCD(0,1,"Attente depart",true);
+    }
+    else
+    {
+      if (myData.game_over)
+      {
+        printLCD(0, 0, "Game Over!", true);
+      }
+      else
+      {
+        if (myData.victory)
+        {
+          printLCD(0, 0, "Victoire", true);
+        }
+        else
+        {
+          printLCD(0, 1, "Attente depart", true);
+        }
+      }
     }
     timeLCD = millis();
   }
@@ -280,7 +299,12 @@ void timer(int timer_value)
           {
             minute = timer_value - 10;
             minute_dizaine = (timer_value - minute) / 10;
-
+            if(!myData.victory){
+              myData.game_over = 1;
+              myData.start = 0;
+              esp_now_send(simonAddress, (uint8_t *)&myData, sizeof(myData));
+              esp_now_send(labyrintheAddress, (uint8_t *)&myData, sizeof(myData));
+            }
             sec_dizaine = 0;
             sec_unite = 0;
           }

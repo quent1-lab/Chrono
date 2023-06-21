@@ -5,8 +5,7 @@
 #include "rgb_lcd.h"
 
 // REPLACE WITH YOUR RECEIVER MAC Address
-uint8_t simonAddress[] = {0x10, 0x97, 0xBD, 0xD2, 0x9B, 0x54};
-uint8_t labyrintheAddress[] = {0xC8, 0xF0, 0x9E, 0x2C, 0x12, 0xC8};
+uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Structure example to send data
 // Must match the receiver structure
@@ -24,10 +23,13 @@ typedef struct struct_message
   bool start;
   bool game_over;
   bool victory;
+  int bouton;
 } struct_message;
 
 // Create a struct_message called myData
 struct_message myData;
+struct_message dataRecv;
+
 esp_now_peer_info_t peerInfo;
 rgb_lcd lcd;
 
@@ -40,9 +42,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-  memcpy(&myData, incomingData, sizeof(myData));
+  memcpy(&dataRecv, incomingData, sizeof(dataRecv));
 }
-
 // Variables of the pins
 const int A1 = 16;
 const int B_1 = 13;
@@ -128,9 +129,10 @@ void setup()
   // Once ESPNow is successfully Init, we will register for Send CB to
   // get the status of Trasnmitted packet
   esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
 
   // Register peer
-  memcpy(peerInfo.peer_addr, simonAddress, 6);
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
 
@@ -139,6 +141,10 @@ void setup()
   {
     Serial.println("Failed to add peer");
     return;
+  }
+  else
+  {
+    Serial.println("Peer added");
   }
 
   test_number(true);
@@ -151,7 +157,7 @@ void setup()
   delay(1500);
   myData.erreur = 0;
   myData.timer = 0;
-  myData.timer_value = 0;
+  myData.timer_value = 5;
   myData.module = 0;
   myData.difficulty = 0;
   myData.level[0] = 0;
@@ -168,17 +174,16 @@ void setup()
 
 void loop()
 {
-  OnDataRecv(simonAddress, (uint8_t *)&myData, sizeof(myData));
-  OnDataRecv(labyrintheAddress, (uint8_t *)&myData, sizeof(myData));
-
-  if (myData.start)
+  // OnDataRecv(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
+  Serial.println(myData.start);
+  if (myData.start == 1)
   {
     timer(myData.timer_value);
   }
 
   if (millis() - timeLCD > 400)
   {
-    if (myData.start)
+    if (myData.start == 1)
     {
       printLCD(0, 0, "Erreur : ", true);
       printLCD(0, 9, String(myData.erreur), false);
@@ -188,13 +193,13 @@ void loop()
     }
     else
     {
-      if (myData.game_over)
+      if (myData.game_over == 1)
       {
         printLCD(0, 0, "Game Over!", true);
       }
       else
       {
-        if (myData.victory)
+        if (myData.victory == 1)
         {
           printLCD(0, 0, "Victoire", true);
         }
@@ -260,6 +265,27 @@ void number_digit(int num_segment, int numeral)
   {
     digitalWrite(pin_segment[num_segment][3], LOW);
   }
+
+  if (dataRecv.erreur != myData.erreur)
+  {
+    myData.erreur = dataRecv.erreur;
+  }
+  if (dataRecv.timer != myData.timer)
+  {
+    myData.timer = dataRecv.timer;
+  }
+  if (dataRecv.start != myData.start)
+  {
+    myData.start = dataRecv.start;
+  }
+  if (dataRecv.victory != myData.victory)
+  {
+    myData.victory = dataRecv.victory;
+  }
+  if (dataRecv.game_over != myData.game_over)
+  {
+    myData.game_over = dataRecv.game_over;
+  }
 }
 
 /*
@@ -299,11 +325,11 @@ void timer(int timer_value)
           {
             minute = timer_value - 10;
             minute_dizaine = (timer_value - minute) / 10;
-            if(!myData.victory){
+            if (!myData.victory && myData.start == 1)
+            {
               myData.game_over = 1;
               myData.start = 0;
-              esp_now_send(simonAddress, (uint8_t *)&myData, sizeof(myData));
-              esp_now_send(labyrintheAddress, (uint8_t *)&myData, sizeof(myData));
+              esp_now_send(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
             }
             sec_dizaine = 0;
             sec_unite = 0;
